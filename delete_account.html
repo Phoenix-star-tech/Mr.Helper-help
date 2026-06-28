@@ -53,9 +53,27 @@
 
         .header p {
             color: var(--text-muted);
-            margin: 0;
+            margin: 0 0 1rem 0;
             font-size: 0.95rem;
             line-height: 1.5;
+        }
+
+        .data-notice {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-left: 4px solid #ea580c;
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            color: #7c2d12;
+            text-align: left;
+            line-height: 1.6;
+        }
+
+        .data-notice strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #9a3412;
         }
 
         .form-group {
@@ -144,7 +162,6 @@
             cursor: not-allowed;
         }
 
-        /* Spinner animation */
         .spinner {
             display: none;
             width: 20px;
@@ -156,9 +173,11 @@
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
+        }
+
+        .form-section {
+            margin-top: 1.5rem;
         }
     </style>
 </head>
@@ -168,13 +187,16 @@
     <div class="container">
         <div class="header">
             <h1>Request Account Deletion</h1>
-            <p>We're sorry to see you go. Please fill out this form to request the permanent deletion of your Mr Helper
-                account and data.</p>
+            <p>We're sorry to see you go. Please fill out this form to request the permanent deletion of your Mr Helper account and data.</p>
+            <div class="data-notice">
+                <strong>⚠️ What will be deleted:</strong>
+                Upon processing your request, the following data will be permanently removed from our servers: your account, profile information, phone number, email, profile photo, location data, booking history, chat messages, reviews, uploaded documents (Aadhaar, PAN), and all associated records. This action cannot be undone.
+            </div>
         </div>
 
         <div id="alertBox" class="alert"></div>
 
-        <form id="deletionForm">
+        <form id="deletionForm" class="form-section">
             <div class="form-group">
                 <label for="phone">Phone Number (Registered)</label>
                 <input type="tel" id="phone" placeholder="+91 XXXXXXXXXX" required>
@@ -200,12 +222,12 @@
     </div>
 
     <script>
-        // Supabase configuration retrieved from your project
         const SUPABASE_URL = 'https://supabase-deep.phoenixsoftwaresolutions172.workers.dev';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2cnBzcWRyYndmdmxsZWx5cWhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNTgxOTksImV4cCI6MjA4MDczNDE5OX0.ON2ioqbNJegKOWeGu_eqsgjNxQ6IdHCDuFRqjUfBYHk';
 
-        // Initialize Supabase Client
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // FIX: use createClient from the supabase global, not reassign supabase variable
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const form = document.getElementById('deletionForm');
         const alertBox = document.getElementById('alertBox');
@@ -244,10 +266,7 @@
             setLoading(true);
 
             try {
-                // Insert the request into the delete_requests table in your database
-                // Note: Ensure your database has a table named 'delete_requests' with these columns
-                // and that its RLS policies allow INSERT for anon roles.
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('delete_requests')
                     .insert([
                         {
@@ -259,14 +278,11 @@
                         }
                     ]);
 
-                if (error) {
-                    throw error;
-                }
+                if (error) throw error;
 
-                // Success
                 form.reset();
                 showAlert('Your account deletion request has been submitted successfully. Our team will process it within 7-14 business days.', 'success');
-                form.style.display = 'none'; // Hide the form after success
+                form.style.display = 'none';
 
             } catch (err) {
                 console.error("Error submitting request:", err);
